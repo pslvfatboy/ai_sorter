@@ -13,8 +13,7 @@ An intelligent, local-first file organization tool powered by Llama 3.1. This sc
 
 ### 1. Clone the Repo
 ```bash
-git clone [https://github.com/yourusername/ai-file-sorter.git](https://github.com/yourusername/ai-file-sorter.git)
-cd ai-file-sorter
+git clone https://github.com/pslvfatboy/ai_sorter.git ai-file-sorter
 
 
 ### 2. Environment Setup
@@ -31,3 +30,4 @@ python ai_sorter.py "C:/Path/To/Files" --move
 
 #### Custom AI Model
 python ai_sorter.py "C:/Path" --model "./models/your_model.gguf"
+
