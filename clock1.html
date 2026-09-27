@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Daybreak Clock</title>
+<meta name="theme-color" content="#07080a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --bg:#07080a;
+    --text:#f2efe9;
+    --text-dim:#a9b0b9;
+    --text-faint:#6f7580;
+    --accent:#ffb454;
+    --accent-2:#6fb7ff;
+    --scrim-top:rgba(4,5,7,.70);
+    --scrim-bottom:rgba(4,5,7,.88);
+    --card:rgba(255,255,255,.07);
+    --card-border:rgba(255,255,255,.10);
+    color-scheme: dark;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Manrope',-apple-system,BlinkMacSystemFont,sans-serif;
+    overflow:hidden;
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;
+  }
+  .frame{
+    position:fixed;
+    inset:0;
+    overflow:hidden;
+  }
+
+  /* ---- background photo layers (crossfade) ---- */
+  .bg-layer{
+    position:absolute; inset:-3%;
+    background-size:cover;
+    background-position:center;
+    opacity:0;
+    transition:opacity 2.4s ease, transform 220s linear;
+    transform:scale(1);
+    will-change:opacity, transform;
+  }
+  .bg-layer.active{opacity:1; transform:scale(1.08);}
+  .bg-scrim{
+    position:absolute; inset:0;
+    background:
+      linear-gradient(to bottom, var(--scrim-top) 0%, rgba(4,5,7,.35) 30%, rgba(4,5,7,.40) 60%, var(--scrim-bottom) 100%);
+    pointer-events:none;
+  }
+  /* plain overnight backdrop, no photo */
+  .night-bg{
+    position:absolute; inset:0;
+    background:radial-gradient(120% 90% at 50% 12%, #131a2c 0%, #0a0d16 45%, #05060a 100%);
+    opacity:0;
+    transition:opacity 2.4s ease;
+  }
+  .night-bg.active{opacity:1;}
+  .stars{
+    position:absolute; inset:0;
+    opacity:.55;
+    background-image:
+      radial-gradient(1.5px 1.5px at 12% 20%, #fff, transparent),
+      radial-gradient(1px 1px at 28% 65%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 45% 30%, #fff, transparent),
+      radial-gradient(1px 1px at 62% 78%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 78% 15%, #fff, transparent),
+      radial-gradient(1px 1px at 85% 55%, #fff, transparent),
+      radial-gradient(1px 1px at 20% 88%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 95% 40%, #fff, transparent);
+    background-repeat:no-repeat;
+  }
+
+  /* ---- drifting content stage (burn-in mitigation) ---- */
+  .stage{
+    position:absolute; inset:0;
+    padding:34px 42px calc(30px + env(safe-area-inset-bottom,0px)) 42px;
+    padding-top:calc(56px + env(safe-area-inset-top,0px));
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    gap:22px;
+    transition:transform 50s ease-in-out;
+    will-change:transform;
+  }
+
+  /* ---- top row ---- */
+  .top-row{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .tag{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:7px 13px;
+    border-radius:100px;
+    background:var(--card);
+    border:1px solid var(--card-border);
+    font-size:12px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    backdrop-filter:blur(6px);
+  }
+  .tag .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none;}
+
+  .weather-pill{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    padding:14px 24px 14px 16px;
+    margin:8px 14px 0 0;
+    border-radius:100px;
+    background:var(--card);
+    border:1px solid var(--card-border);
+    backdrop-filter:blur(6px);
+  }
+  .weather-pill svg{width:46px;height:46px;flex:none;color:var(--accent);}
+  .weather-temp{font-family:'JetBrains Mono',monospace; font-size:33px; font-weight:600; font-variant-numeric:tabular-nums;}
+  .weather-place{font-size:14px; color:var(--text-faint); margin-top:2px;}
+  .weather-text{display:flex; flex-direction:column; line-height:1.15;}
+
+  /* ---- clock ---- */
+  .clock-wrap{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    gap:10px;
+    min-height:0;
+  }
+  .time-row{
+    display:flex;
+    align-items:baseline;
+    gap:2vw;
+    line-height:1;
+  }
+  .time-main{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:clamp(96px, 32vw, 280px);
+    letter-spacing:-.02em;
+    font-variant-numeric:tabular-nums;
+    text-shadow:0 4px 30px rgba(0,0,0,.45);
+  }
+  .time-seconds{
+    display:block;
+    font-family:'JetBrains Mono',monospace;
+    font-weight:500;
+    font-size:clamp(26px, 7vw, 60px);
+    color:var(--text-dim);
+    font-variant-numeric:tabular-nums;
+    letter-spacing:.04em;
+  }
+  .time-seconds::before{content:"· ";}
+  .time-seconds::after{content:" ·";}
+  .date-row{
+    font-size:clamp(14px, 3vw, 20px);
+    color:var(--text-dim);
+    letter-spacing:.02em;
+  }
+  .period-note{
+    font-size:12px;
+    color:var(--text-faint);
+    letter-spacing:.06em;
+    text-transform:uppercase;
+  }
+
+  /* ---- forecast strip ---- */
+  .forecast{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0,1fr));
+    gap:10px;
+  }
+  .fc-card{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:4px;
+    padding:12px 6px 13px;
+    border-radius:16px;
+    background:var(--card);
+    border:1px solid var(--card-border);
+    backdrop-filter:blur(6px);
+    min-width:0;
+  }
+  .fc-day{
+    font-size:11px;
+    letter-spacing:.07em;
+    text-transform:uppercase;
+    color:var(--text-faint);
+  }
+  .fc-card svg{width:24px;height:24px;color:var(--accent-2);}
+  .fc-temps{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    font-variant-numeric:tabular-nums;
+  }
+  .fc-hi{color:var(--text);}
+  .fc-lo{color:var(--text-faint);}
+
+  /* ---- fullscreen tap hint ---- */
+  .fs-hint{
+    position:absolute;
+    inset:0;
+    z-index:20;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(4,5,7,.55);
+    backdrop-filter:blur(2px);
+    transition:opacity .5s ease;
+  }
+  .fs-hint.hidden{opacity:0; pointer-events:none;}
+  .fs-hint-card{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+    padding:22px 28px;
+    border-radius:18px;
+    background:var(--card);
+    border:1px solid var(--card-border);
+    color:var(--text);
+    font-size:14px;
+    letter-spacing:.03em;
+  }
+  .fs-hint-card svg{width:30px;height:30px;color:var(--accent);}
+
+  @media (max-width:380px){
+    .time-row{gap:1.6vw;}
+    .weather-place{display:none;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .bg-layer, .stage{transition:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="frame" id="frame">
+  <div class="bg-layer" id="bgA"></div>
+  <div class="bg-layer" id="bgB"></div>
+  <div class="night-bg" id="nightBg"><div class="stars"></div></div>
+  <div class="bg-scrim"></div>
+
+  <div class="stage" id="stage">
+    <div class="top-row">
+      <div class="tag"><span class="dot"></span><span id="periodTag">Loading</span></div>
+      <div class="weather-pill">
+        <span id="weatherIcon"></span>
+        <div class="weather-text">
+          <span class="weather-temp" id="weatherTemp">--°</span>
+          <span class="weather-place" id="weatherPlace">--</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="clock-wrap">
+      <div class="time-row">
+        <span class="time-main" id="timeMain">00:00</span>
+      </div>
+      <span class="time-seconds" id="timeSeconds">00</span>
+      <div class="date-row" id="dateRow">--</div>
+      <div class="period-note" id="periodNote">--</div>
+    </div>
+
+    <div class="forecast" id="forecast">
+      <!-- filled by JS -->
+    </div>
+  </div>
+
+  <div class="fs-hint" id="fsHint">
+    <div class="fs-hint-card">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H5a1 1 0 0 0-1 1v4M15 4h4a1 1 0 0 1 1 1v4M9 20H5a1 1 0 0 1-1-1v-4M15 20h4a1 1 0 0 0 1-1v-4"/></svg>
+      <span>Tap anywhere to go full screen</span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============ CONFIG ============ */
+  // Default location: Faridabad, Haryana, India. Overridden silently by
+  // geolocation if the browser grants it quickly.
+  var LOCATION = { lat: 28.4089, lon: 77.3178, name: "Faridabad" };
+
+  var CATEGORIES = [
+    { start:7,  end:12, key:"religious", tag:"Morning · Sacred Places",
+      queries:["ancient temple architecture","cathedral interior","mosque architecture","monastery mountains","buddhist temple","church stained glass"] },
+    { start:12, end:17, key:"tourist", tag:"Afternoon · Landmarks",
+      queries:["famous landmark travel","mountain viewpoint travel","historic city skyline","waterfall travel destination","desert landscape travel","ancient ruins travel"] },
+    { start:17, end:20, key:"food", tag:"Evening · Food & Getaways",
+      queries:["gourmet food table","sunset beach vacation","street food market","tropical resort evening","fine dining plate","seaside sunset"] },
+    { start:20, end:22, key:"news", tag:"Night · World News",
+      queries:["newspaper front page","press conference journalism","world map news","city skyline night lights","television news studio"] }
+  ];
+  // 22:00–07:00 -> no photo, plain calm background.
+
+  var WEATHER_REFRESH_MS = 30 * 60 * 1000;   // 30 min
+  var DRIFT_INTERVAL_MS = 60 * 1000;         // 60 s burn-in drift
+  var DRIFT_RANGE_PX = 14;
+
+  /* ============ helpers ============ */
+  function pad(n){ return String(n).padStart(2,"0"); }
+  function pick(arr, seed){ return arr[seed % arr.length]; }
+
+  function getCategory(hour){
+    for (var i=0;i<CATEGORIES.length;i++){
+      var c = CATEGORIES[i];
+      if (hour >= c.start && hour < c.end) return c;
+    }
+    return null; // night window
+  }
+
+  /* ============ clock ============ */
+  var elMain = document.getElementById("timeMain");
+  var elSec  = document.getElementById("timeSeconds");
+  var elDate = document.getElementById("dateRow");
+  var elTag  = document.getElementById("periodTag");
+  var elNote = document.getElementById("periodNote");
+
+  var DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  var MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+  function tick(){
+    var now = new Date();
+    elMain.textContent = pad(now.getHours()) + ":" + pad(now.getMinutes());
+    elSec.textContent = pad(now.getSeconds());
+    elDate.textContent = DAY_NAMES[now.getDay()] + ", " + now.getDate() + " " + MONTH_NAMES[now.getMonth()];
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  /* ============ wallpaper engine ============ */
+  var bgA = document.getElementById("bgA");
+  var bgB = document.getElementById("bgB");
+  var nightBg = document.getElementById("nightBg");
+  var activeLayer = bgA;
+  var lastFetchedKey = null;
+
+  function setPeriodLabels(cat, hour){
+    if (cat){
+      elTag.textContent = cat.tag;
+      elNote.textContent = "Wallpaper refreshes hourly";
+    } else {
+      elTag.textContent = "Overnight · Quiet Scene";
+      elNote.textContent = "Dimmed for screen care";
+    }
+  }
+
+  function showNightBackdrop(){
+    nightBg.classList.add("active");
+    bgA.classList.remove("active");
+    bgB.classList.remove("active");
+  }
+
+  function swapToImage(url){
+    var incoming = (activeLayer === bgA) ? bgB : bgA;
+    var img = new Image();
+    img.onload = function(){
+      incoming.style.backgroundImage = "url('" + url + "')";
+      nightBg.classList.remove("active");
+      incoming.classList.add("active");
+      activeLayer.classList.remove("active");
+      activeLayer = incoming;
+    };
+    img.onerror = function(){ /* leave current wallpaper in place */ };
+    img.src = url;
+  }
+
+  function fallbackGradientFor(key){
+    var gradients = {
+      religious: "radial-gradient(120% 90% at 50% 0%, #3a2a1e 0%, #14100c 60%, #07080a 100%)",
+      tourist:   "radial-gradient(120% 90% at 50% 0%, #123a3f 0%, #0d1a1e 60%, #07080a 100%)",
+      food:      "radial-gradient(120% 90% at 50% 0%, #3a1f16 0%, #1a100c 60%, #07080a 100%)",
+      news:      "radial-gradient(120% 90% at 50% 0%, #1c2333 0%, #0e1119 60%, #07080a 100%)"
+    };
+    var incoming = (activeLayer === bgA) ? bgB : bgA;
+    incoming.style.backgroundImage = "none";
+    incoming.style.background = gradients[key] || gradients.tourist;
+    nightBg.classList.remove("active");
+    incoming.classList.add("active");
+    activeLayer.classList.remove("active");
+    activeLayer = incoming;
+  }
+
+  function fetchWallpaper(cat, hour){
+    var q = pick(cat.queries, hour);
+    var url = "https://api.openverse.org/v1/images/?q=" + encodeURIComponent(q) +
+              "&category=photograph&size=large&page_size=20&mature=false";
+    fetch(url)
+      .then(function(r){ if(!r.ok) throw new Error("bad response"); return r.json(); })
+      .then(function(data){
+        var results = (data && data.results) || [];
+        if (!results.length) throw new Error("no results");
+        var choice = results[Math.floor(Math.random()*results.length)];
+        var imgUrl = choice.url || choice.thumbnail;
+        if (!imgUrl) throw new Error("no url");
+        swapToImage(imgUrl);
+      })
+      .catch(function(){ fallbackGradientFor(cat.key); });
+  }
+
+  function refreshWallpaperIfNeeded(){
+    var now = new Date();
+    var hour = now.getHours();
+    var cat = getCategory(hour);
+    setPeriodLabels(cat, hour);
+
+    if (!cat){
+      showNightBackdrop();
+      lastFetchedKey = "night";
+      return;
+    }
+
+    var hourKey = cat.key + "-" + now.getFullYear() + "-" + now.getMonth() + "-" + now.getDate() + "-" + hour;
+    if (hourKey === lastFetchedKey) return;
+    lastFetchedKey = hourKey;
+    fetchWallpaper(cat, hour);
+  }
+
+  refreshWallpaperIfNeeded();
+  setInterval(refreshWallpaperIfNeeded, 60 * 1000);
+
+  /* ============ weather ============ */
+  var WMO_ICONS = {
+    clear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4.6"/><path d="M12 2.5v2.4M12 19.1v2.4M4.6 4.6l1.7 1.7M17.7 17.7l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.6 19.4l1.7-1.7M17.7 6.3l1.7-1.7" stroke-linecap="round"/></svg>',
+    cloud: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6.5 18a4 4 0 0 1-.4-7.98A5.5 5.5 0 0 1 16.6 8.3 4.5 4.5 0 0 1 16 18H6.5Z" stroke-linejoin="round"/></svg>',
+    rain: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6.5 14.5a4 4 0 0 1-.4-7.97A5.5 5.5 0 0 1 16.6 4.8 4.5 4.5 0 0 1 16 14.5H6.5Z" stroke-linejoin="round"/><path d="M8 17.5 7 20M12 17.5l-1 2.5M16 17.5l-1 2.5" stroke-linecap="round"/></svg>',
+    snow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6.5 13.5a4 4 0 0 1-.4-7.97A5.5 5.5 0 0 1 16.6 3.8 4.5 4.5 0 0 1 16 13.5H6.5Z" stroke-linejoin="round"/><path d="M9 17v4M7 18.5l4 1M11 18.5l-4 1M15 17v4M13 18.5l4 1M17 18.5l-4 1" stroke-linecap="round"/></svg>',
+    storm: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6.5 13a4 4 0 0 1-.4-7.97A5.5 5.5 0 0 1 16.6 3.3 4.5 4.5 0 0 1 16 13H6.5Z" stroke-linejoin="round"/><path d="M13 13.5 10 18h3l-2 4" stroke-linejoin="round" stroke-linecap="round"/></svg>',
+    fog: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 9h9M3 12.5h14M6 16h11" stroke-linecap="round"/></svg>',
+    night: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 14.2A8 8 0 1 1 9.8 4a6.4 6.4 0 0 0 10.2 10.2Z" stroke-linejoin="round"/></svg>'
+  };
+
+  function iconForCode(code, isDay){
+    if (code === 0) return isDay ? WMO_ICONS.clear : WMO_ICONS.night;
+    if ([1,2,3].indexOf(code) > -1) return WMO_ICONS.cloud;
+    if ([45,48].indexOf(code) > -1) return WMO_ICONS.fog;
+    if ([51,53,55,56,57,61,63,65,66,67,80,81,82].indexOf(code) > -1) return WMO_ICONS.rain;
+    if ([71,73,75,77,85,86].indexOf(code) > -1) return WMO_ICONS.snow;
+    if ([95,96,99].indexOf(code) > -1) return WMO_ICONS.storm;
+    return WMO_ICONS.cloud;
+  }
+
+  var elWIcon = document.getElementById("weatherIcon");
+  var elWTemp = document.getElementById("weatherTemp");
+  var elWPlace = document.getElementById("weatherPlace");
+  var elForecast = document.getElementById("forecast");
+  var FC_DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+  function renderForecast(daily){
+    elForecast.innerHTML = "";
+    var startIdx = daily.time.length > 4 ? 1 : 0;
+    for (var i=startIdx; i<startIdx+4 && i<daily.time.length; i++){
+      var d = new Date(daily.time[i] + "T00:00:00");
+      var card = document.createElement("div");
+      card.className = "fc-card";
+      card.innerHTML =
+        '<span class="fc-day">' + FC_DAY_NAMES[d.getDay()] + '</span>' +
+        iconForCode(daily.weather_code[i], true) +
+        '<span class="fc-temps"><span class="fc-hi">' + Math.round(daily.temperature_2m_max[i]) + '°</span> <span class="fc-lo">' + Math.round(daily.temperature_2m_min[i]) + '°</span></span>';
+      elForecast.appendChild(card);
+    }
+  }
+
+  function fetchWeather(){
+    var url = "https://api.open-meteo.com/v1/forecast?latitude=" + LOCATION.lat +
+              "&longitude=" + LOCATION.lon +
+              "&current=temperature_2m,weather_code,is_day" +
+              "&daily=temperature_2m_max,temperature_2m_min,weather_code" +
+              "&timezone=auto&forecast_days=6";
+    fetch(url)
+      .then(function(r){ if(!r.ok) throw new Error("bad response"); return r.json(); })
+      .then(function(data){
+        if (data.current){
+          elWIcon.innerHTML = iconForCode(data.current.weather_code, data.current.is_day === 1);
+          elWTemp.textContent = Math.round(data.current.temperature_2m) + "°C";
+        }
+        elWPlace.textContent = LOCATION.name;
+        if (data.daily) renderForecast(data.daily);
+      })
+      .catch(function(){
+        elWTemp.textContent = "--°C";
+        elWPlace.textContent = LOCATION.name;
+      });
+  }
+
+  fetchWeather();
+  setInterval(fetchWeather, WEATHER_REFRESH_MS);
+
+  if (navigator.geolocation){
+    try{
+      navigator.geolocation.getCurrentPosition(function(pos){
+        LOCATION = { lat: pos.coords.latitude, lon: pos.coords.longitude, name: "Current location" };
+        fetchWeather();
+      }, function(){ /* keep default */ }, { timeout: 4000, maximumAge: 3600000 });
+    }catch(e){ /* keep default */ }
+  }
+
+  /* ============ OLED / AMOLED burn-in protection ============ */
+  var stage = document.getElementById("stage");
+  function driftContent(){
+    var x = (Math.random() * DRIFT_RANGE_PX * 2 - DRIFT_RANGE_PX).toFixed(1);
+    var y = (Math.random() * DRIFT_RANGE_PX * 2 - DRIFT_RANGE_PX).toFixed(1);
+    stage.style.transform = "translate(" + x + "px," + y + "px)";
+  }
+  driftContent();
+  setInterval(driftContent, DRIFT_INTERVAL_MS);
+
+  if ("wakeLock" in navigator){
+    var requestWakeLock = function(){
+      navigator.wakeLock.request("screen").catch(function(){});
+    };
+    requestWakeLock();
+    document.addEventListener("visibilitychange", function(){
+      if (document.visibilityState === "visible") requestWakeLock();
+    });
+  }
+
+  /* ============ fullscreen on touch (Chrome/Android has no browser UI to hide otherwise) ============ */
+  var fsHint = document.getElementById("fsHint");
+  var docEl = document.documentElement;
+
+  function isFullscreen(){
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+
+  function enterFullscreen(){
+    var req = docEl.requestFullscreen || docEl.webkitRequestFullscreen;
+    if (req){
+      req.call(docEl).catch(function(){ /* some browsers reject silently */ });
+    }
+    // Landscape lock is optional and only works once fullscreen is active;
+    // fails silently on phones/browsers that don't support it.
+    if (screen.orientation && screen.orientation.lock){
+      screen.orientation.lock("any").catch(function(){});
+    }
+  }
+
+  function updateHint(){
+    if (isFullscreen()) fsHint.classList.add("hidden");
+    else fsHint.classList.remove("hidden");
+  }
+
+  document.addEventListener("click", function(){
+    if (!isFullscreen()) enterFullscreen();
+  });
+  document.addEventListener("touchend", function(){
+    if (!isFullscreen()) enterFullscreen();
+  });
+  document.addEventListener("fullscreenchange", updateHint);
+  document.addEventListener("webkitfullscreenchange", updateHint);
+  updateHint();
+
+})();
+</script>
+</body>
+</html>
