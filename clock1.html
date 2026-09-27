@@ -131,14 +131,16 @@
   .weather-text{display:flex; flex-direction:column; line-height:1.15;}
 
   .clock-wrap{
-    flex:1;
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
     display:flex;
     flex-direction:column;
     align-items:center;
-    justify-content:center;
     text-align:center;
-    gap:8px;
-    min-height:0;
+    gap:10px;
+    max-width:92vw;
   }
   .time-row{
     display:flex;
@@ -164,17 +166,6 @@
     color:var(--text-dim);
     letter-spacing:.04em;
   }
-  .time-seconds{
-    display:block;
-    font-family:'JetBrains Mono',monospace;
-    font-weight:500;
-    font-size:clamp(18px, 7vw, 34px);
-    color:var(--text-dim);
-    font-variant-numeric:tabular-nums;
-    letter-spacing:.04em;
-  }
-  .time-seconds::before{content:"· ";}
-  .time-seconds::after{content:" ·";}
   .date-row{
     font-size:clamp(13px, 3.6vw, 17px);
     color:var(--text-dim);
@@ -271,11 +262,10 @@
     .weather-pill svg{width:46px;height:46px;}
     .weather-temp{font-size:33px;}
     .weather-place{font-size:14px;}
-    .clock-wrap{gap:10px;}
+    .clock-wrap{gap:12px;}
     .time-row{gap:12px;}
     .time-main{font-size:clamp(96px, 27vw, 220px);}
     .time-ampm{font-size:clamp(22px, 5vw, 46px);}
-    .time-seconds{font-size:clamp(26px, 6vw, 52px);}
     .date-row{font-size:clamp(16px, 3vw, 20px);}
     .period-note{font-size:12px;}
     .fc-card{gap:16px; padding:14px 24px 14px 16px;}
@@ -306,7 +296,6 @@
         <span class="time-main" id="timeMain">12:00</span>
         <span class="time-ampm" id="timeAmpm">AM</span>
       </div>
-      <span class="time-seconds" id="timeSeconds">00</span>
       <div class="date-row" id="dateRow">--</div>
       <div class="period-note" id="periodNote">--</div>
     </div>
@@ -371,7 +360,6 @@
 
   var elMain = document.getElementById("timeMain");
   var elAmpm = document.getElementById("timeAmpm");
-  var elSec  = document.getElementById("timeSeconds");
   var elDate = document.getElementById("dateRow");
   var elTag  = document.getElementById("periodTag");
   var elNote = document.getElementById("periodNote");
@@ -386,11 +374,13 @@
     if (h12 === 0) h12 = 12;
     elMain.textContent = h12 + ":" + pad(now.getMinutes());
     elAmpm.textContent = h24 >= 12 ? "PM" : "AM";
-    elSec.textContent = pad(now.getSeconds());
     elDate.textContent = DAY_NAMES[now.getDay()] + ", " + now.getDate() + " " + MONTH_NAMES[now.getMonth()];
   }
   tick();
-  setInterval(tick, 1000);
+  // No seconds shown, so a 15s cadence keeps the minute display accurate
+  // (worst case ~15s stale on the minute rollover) while doing less work
+  // than a per-second tick on a screen that's always on.
+  setInterval(tick, 15 * 1000);
 
   var bgA = document.getElementById("bgA");
   var bgB = document.getElementById("bgB");
@@ -673,6 +663,8 @@
   }, CHECK_INTERVAL_MS);
 })();
 </script>
+</body>
+</html>
 </body>
 </html>
 </body>
