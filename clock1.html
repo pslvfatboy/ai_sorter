@@ -179,22 +179,22 @@
     text-transform:uppercase;
   }
 
-  .forecast{
-    display:grid;
-    grid-template-columns:repeat(2, minmax(0,1fr));
+  .bottom-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
     gap:10px;
   }
   .fc-card{
     display:flex;
-    flex-direction:row;
     align-items:center;
-    justify-content:center;
-    gap:10px;
-    padding:12px 8px;
-    border-radius:16px;
+    gap:9px;
+    padding:8px 14px 8px 10px;
+    border-radius:100px;
     background:var(--card);
     border:1px solid var(--card-border);
     backdrop-filter:blur(6px);
+    flex:none;
     min-width:0;
   }
   .fc-card svg{width:30px;height:30px;flex:none;color:var(--accent-2);}
@@ -202,19 +202,20 @@
     display:flex;
     flex-direction:column;
     align-items:flex-start;
-    gap:3px;
+    gap:2px;
     min-width:0;
+    line-height:1.15;
   }
   .fc-day{
-    font-size:13px;
+    font-size:11px;
     font-weight:600;
-    letter-spacing:.05em;
+    letter-spacing:.06em;
     text-transform:uppercase;
-    color:var(--text-dim);
+    color:var(--text-faint);
   }
   .fc-temps{
     font-family:'JetBrains Mono',monospace;
-    font-size:17px;
+    font-size:20px;
     font-variant-numeric:tabular-nums;
     white-space:nowrap;
   }
@@ -258,7 +259,7 @@
       gap:22px;
     }
     .tag{font-size:12px; padding:7px 13px; gap:8px;}
-    .weather-pill{gap:16px; padding:14px 24px 14px 16px; margin:8px 14px 0 0;}
+    .weather-pill{gap:16px; padding:14px 24px 14px 16px;}
     .weather-pill svg{width:46px;height:46px;}
     .weather-temp{font-size:33px;}
     .weather-place{font-size:14px;}
@@ -267,11 +268,10 @@
     .time-seconds{font-size:clamp(26px, 6vw, 52px);}
     .date-row{font-size:clamp(16px, 3vw, 20px);}
     .period-note{font-size:12px;}
-    .forecast{grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px;}
-    .fc-card{padding:18px 10px; gap:12px; border-radius:18px;}
-    .fc-card svg{width:40px;height:40px;}
-    .fc-day{font-size:16px;}
-    .fc-temps{font-size:21px;}
+    .fc-card{gap:16px; padding:14px 24px 14px 16px;}
+    .fc-card svg{width:46px;height:46px;}
+    .fc-day{font-size:14px;}
+    .fc-temps{font-size:26px;}
   }
   @media (prefers-reduced-motion:reduce){
     .bg-layer, .stage{transition:none;}
@@ -279,6 +279,9 @@
 </style>
 </head>
 <body>
+
+
+
 
 <div class="frame" id="frame">
   <div class="bg-layer" id="bgA"></div>
@@ -289,13 +292,6 @@
   <div class="stage" id="stage">
     <div class="top-row">
       <div class="tag"><span class="dot"></span><span id="periodTag">Loading</span></div>
-      <div class="weather-pill">
-        <span id="weatherIcon"></span>
-        <div class="weather-text">
-          <span class="weather-temp" id="weatherTemp">--°</span>
-          <span class="weather-place" id="weatherPlace">--</span>
-        </div>
-      </div>
     </div>
 
     <div class="clock-wrap">
@@ -307,8 +303,21 @@
       <div class="period-note" id="periodNote">--</div>
     </div>
 
-    <div class="forecast" id="forecast">
-      <!-- filled by JS -->
+    <div class="bottom-row">
+      <div class="fc-card" id="todayCard">
+        <span id="todayIcon"></span>
+        <div class="fc-info">
+          <span class="fc-day">Today</span>
+          <span class="fc-temps"><span class="fc-hi" id="todayHi">--°</span> <span class="fc-lo" id="todayLo">--°</span></span>
+        </div>
+      </div>
+      <div class="weather-pill">
+        <span id="weatherIcon"></span>
+        <div class="weather-text">
+          <span class="weather-temp" id="weatherTemp">--°</span>
+          <span class="weather-place" id="weatherPlace">--</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -494,24 +503,15 @@
   var elWIcon = document.getElementById("weatherIcon");
   var elWTemp = document.getElementById("weatherTemp");
   var elWPlace = document.getElementById("weatherPlace");
-  var elForecast = document.getElementById("forecast");
-  var FC_DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  var elTodayIcon = document.getElementById("todayIcon");
+  var elTodayHi = document.getElementById("todayHi");
+  var elTodayLo = document.getElementById("todayLo");
 
-  function renderForecast(daily){
-    elForecast.innerHTML = "";
-    var startIdx = daily.time.length > 4 ? 1 : 0;
-    for (var i=startIdx; i<startIdx+4 && i<daily.time.length; i++){
-      var d = new Date(daily.time[i] + "T00:00:00");
-      var card = document.createElement("div");
-      card.className = "fc-card";
-      card.innerHTML =
-        iconForCode(daily.weather_code[i], true) +
-        '<span class="fc-info">' +
-          '<span class="fc-day">' + FC_DAY_NAMES[d.getDay()] + '</span>' +
-          '<span class="fc-temps"><span class="fc-hi">' + Math.round(daily.temperature_2m_max[i]) + '°</span> <span class="fc-lo">' + Math.round(daily.temperature_2m_min[i]) + '°</span></span>' +
-        '</span>';
-      elForecast.appendChild(card);
-    }
+  function renderToday(daily){
+    if (!daily.time.length) return;
+    elTodayIcon.innerHTML = iconForCode(daily.weather_code[0], true);
+    elTodayHi.textContent = Math.round(daily.temperature_2m_max[0]) + "°";
+    elTodayLo.textContent = Math.round(daily.temperature_2m_min[0]) + "°";
   }
 
   function fetchWeather(){
@@ -519,7 +519,7 @@
               "&longitude=" + LOCATION.lon +
               "&current=temperature_2m,weather_code,is_day" +
               "&daily=temperature_2m_max,temperature_2m_min,weather_code" +
-              "&timezone=auto&forecast_days=6";
+              "&timezone=auto&forecast_days=1";
     fetch(url)
       .then(function(r){ if(!r.ok) throw new Error("bad response"); return r.json(); })
       .then(function(data){
@@ -528,7 +528,7 @@
           elWTemp.textContent = Math.round(data.current.temperature_2m) + "°C";
         }
         elWPlace.textContent = LOCATION.name;
-        if (data.daily) renderForecast(data.daily);
+        if (data.daily) renderToday(data.daily);
       })
       .catch(function(){
         elWTemp.textContent = "--°C";
@@ -660,5 +660,7 @@
   }, CHECK_INTERVAL_MS);
 })();
 </script>
+</body>
+</html>
 </body>
 </html>
