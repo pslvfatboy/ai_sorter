@@ -39,8 +39,6 @@
     inset:0;
     overflow:hidden;
   }
-
-  /* ---- background photo layers (crossfade) ---- */
   .bg-layer{
     position:absolute; inset:-3%;
     background-size:cover;
@@ -57,7 +55,6 @@
       linear-gradient(to bottom, var(--scrim-top) 0%, rgba(4,5,7,.35) 30%, rgba(4,5,7,.40) 60%, var(--scrim-bottom) 100%);
     pointer-events:none;
   }
-  /* plain overnight backdrop, no photo */
   .night-bg{
     position:absolute; inset:0;
     background:radial-gradient(120% 90% at 50% 12%, #131a2c 0%, #0a0d16 45%, #05060a 100%);
@@ -80,59 +77,59 @@
     background-repeat:no-repeat;
   }
 
-  /* ---- drifting content stage (burn-in mitigation) ---- */
+  /* ---- mobile-first stage: sized for the A9 Pro's ~360x640 CSS viewport ---- */
   .stage{
     position:absolute; inset:0;
-    padding:34px 42px calc(30px + env(safe-area-inset-bottom,0px)) 42px;
-    padding-top:calc(56px + env(safe-area-inset-top,0px));
+    padding:18px 16px calc(16px + env(safe-area-inset-bottom,0px)) 16px;
+    padding-top:calc(20px + env(safe-area-inset-top,0px));
     display:flex;
     flex-direction:column;
     justify-content:space-between;
-    gap:22px;
+    gap:14px;
     transition:transform 50s ease-in-out;
     will-change:transform;
   }
-
-  /* ---- top row ---- */
   .top-row{
     display:flex;
-    align-items:flex-start;
+    align-items:center;
     justify-content:space-between;
-    gap:12px;
+    gap:8px;
   }
   .tag{
     display:inline-flex;
     align-items:center;
-    gap:8px;
-    padding:7px 13px;
+    gap:6px;
+    padding:6px 11px;
     border-radius:100px;
     background:var(--card);
     border:1px solid var(--card-border);
-    font-size:12px;
-    letter-spacing:.08em;
+    font-size:10.5px;
+    letter-spacing:.06em;
     text-transform:uppercase;
     color:var(--text-dim);
     backdrop-filter:blur(6px);
+    min-width:0;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
   }
   .tag .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none;}
-
   .weather-pill{
     display:flex;
     align-items:center;
-    gap:16px;
-    padding:14px 24px 14px 16px;
-    margin:8px 14px 0 0;
+    gap:9px;
+    padding:8px 14px 8px 10px;
     border-radius:100px;
     background:var(--card);
     border:1px solid var(--card-border);
     backdrop-filter:blur(6px);
+    flex:none;
   }
-  .weather-pill svg{width:46px;height:46px;flex:none;color:var(--accent);}
-  .weather-temp{font-family:'JetBrains Mono',monospace; font-size:33px; font-weight:600; font-variant-numeric:tabular-nums;}
-  .weather-place{font-size:14px; color:var(--text-faint); margin-top:2px;}
+  .weather-pill svg{width:30px;height:30px;flex:none;color:var(--accent);}
+  .weather-temp{font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .weather-place{font-size:11px; color:var(--text-faint); margin-top:1px;}
   .weather-text{display:flex; flex-direction:column; line-height:1.15;}
 
-  /* ---- clock ---- */
   .clock-wrap{
     flex:1;
     display:flex;
@@ -140,28 +137,30 @@
     align-items:center;
     justify-content:center;
     text-align:center;
-    gap:10px;
+    gap:8px;
     min-height:0;
   }
   .time-row{
     display:flex;
     align-items:baseline;
-    gap:2vw;
+    justify-content:center;
     line-height:1;
+    width:100%;
   }
   .time-main{
     font-family:'JetBrains Mono',monospace;
     font-weight:700;
-    font-size:clamp(96px, 32vw, 280px);
+    font-size:clamp(52px, 24vw, 108px);
     letter-spacing:-.02em;
     font-variant-numeric:tabular-nums;
     text-shadow:0 4px 30px rgba(0,0,0,.45);
+    white-space:nowrap;
   }
   .time-seconds{
     display:block;
     font-family:'JetBrains Mono',monospace;
     font-weight:500;
-    font-size:clamp(26px, 7vw, 60px);
+    font-size:clamp(18px, 7vw, 34px);
     color:var(--text-dim);
     font-variant-numeric:tabular-nums;
     letter-spacing:.04em;
@@ -169,51 +168,59 @@
   .time-seconds::before{content:"· ";}
   .time-seconds::after{content:" ·";}
   .date-row{
-    font-size:clamp(14px, 3vw, 20px);
+    font-size:clamp(13px, 3.6vw, 17px);
     color:var(--text-dim);
     letter-spacing:.02em;
   }
   .period-note{
-    font-size:12px;
+    font-size:10.5px;
     color:var(--text-faint);
-    letter-spacing:.06em;
+    letter-spacing:.05em;
     text-transform:uppercase;
   }
 
-  /* ---- forecast strip ---- */
   .forecast{
     display:grid;
-    grid-template-columns:repeat(4, minmax(0,1fr));
+    grid-template-columns:repeat(2, minmax(0,1fr));
     gap:10px;
   }
   .fc-card{
     display:flex;
-    flex-direction:column;
+    flex-direction:row;
     align-items:center;
-    gap:4px;
-    padding:12px 6px 13px;
+    justify-content:center;
+    gap:10px;
+    padding:12px 8px;
     border-radius:16px;
     background:var(--card);
     border:1px solid var(--card-border);
     backdrop-filter:blur(6px);
     min-width:0;
   }
-  .fc-day{
-    font-size:11px;
-    letter-spacing:.07em;
-    text-transform:uppercase;
-    color:var(--text-faint);
+  .fc-card svg{width:30px;height:30px;flex:none;color:var(--accent-2);}
+  .fc-info{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:3px;
+    min-width:0;
   }
-  .fc-card svg{width:24px;height:24px;color:var(--accent-2);}
+  .fc-day{
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+  }
   .fc-temps{
     font-family:'JetBrains Mono',monospace;
-    font-size:13px;
+    font-size:17px;
     font-variant-numeric:tabular-nums;
+    white-space:nowrap;
   }
-  .fc-hi{color:var(--text);}
+  .fc-hi{color:var(--text); font-weight:600;}
   .fc-lo{color:var(--text-faint);}
 
-  /* ---- fullscreen tap hint ---- */
   .fs-hint{
     position:absolute;
     inset:0;
@@ -231,19 +238,40 @@
     flex-direction:column;
     align-items:center;
     gap:10px;
-    padding:22px 28px;
+    padding:20px 26px;
     border-radius:18px;
     background:var(--card);
     border:1px solid var(--card-border);
     color:var(--text);
-    font-size:14px;
+    font-size:13px;
     letter-spacing:.03em;
+    text-align:center;
+    max-width:80vw;
   }
-  .fs-hint-card svg{width:30px;height:30px;color:var(--accent);}
+  .fs-hint-card svg{width:28px;height:28px;color:var(--accent);}
 
-  @media (max-width:380px){
-    .time-row{gap:1.6vw;}
-    .weather-place{display:none;}
+  /* ---- enhance for tablets / laptops previewing the page ---- */
+  @media (min-width:480px){
+    .stage{
+      padding:34px 42px calc(30px + env(safe-area-inset-bottom,0px)) 42px;
+      padding-top:calc(56px + env(safe-area-inset-top,0px));
+      gap:22px;
+    }
+    .tag{font-size:12px; padding:7px 13px; gap:8px;}
+    .weather-pill{gap:16px; padding:14px 24px 14px 16px; margin:8px 14px 0 0;}
+    .weather-pill svg{width:46px;height:46px;}
+    .weather-temp{font-size:33px;}
+    .weather-place{font-size:14px;}
+    .clock-wrap{gap:10px;}
+    .time-main{font-size:clamp(96px, 27vw, 220px);}
+    .time-seconds{font-size:clamp(26px, 6vw, 52px);}
+    .date-row{font-size:clamp(16px, 3vw, 20px);}
+    .period-note{font-size:12px;}
+    .forecast{grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px;}
+    .fc-card{padding:18px 10px; gap:12px; border-radius:18px;}
+    .fc-card svg{width:40px;height:40px;}
+    .fc-day{font-size:16px;}
+    .fc-temps{font-size:21px;}
   }
   @media (prefers-reduced-motion:reduce){
     .bg-layer, .stage{transition:none;}
@@ -287,7 +315,7 @@
   <div class="fs-hint" id="fsHint">
     <div class="fs-hint-card">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H5a1 1 0 0 0-1 1v4M15 4h4a1 1 0 0 1 1 1v4M9 20H5a1 1 0 0 1-1-1v-4M15 20h4a1 1 0 0 0 1-1v-4"/></svg>
-      <span>Tap anywhere to go full screen</span>
+      <span>Tap anywhere to go full screen<br>(tap again to exit)</span>
     </div>
   </div>
 </div>
@@ -296,28 +324,23 @@
 (function(){
   "use strict";
 
-  /* ============ CONFIG ============ */
-  // Default location: Faridabad, Haryana, India. Overridden silently by
-  // geolocation if the browser grants it quickly.
   var LOCATION = { lat: 28.4089, lon: 77.3178, name: "Faridabad" };
 
   var CATEGORIES = [
     { start:7,  end:12, key:"religious", tag:"Morning · Sacred Places",
-      queries:["ancient temple architecture","cathedral interior","mosque architecture","monastery mountains","buddhist temple","church stained glass"] },
+      queries:["temple architecture","cathedral interior","mosque architecture","monastery","buddhist temple","church stained glass"] },
     { start:12, end:17, key:"tourist", tag:"Afternoon · Landmarks",
-      queries:["famous landmark travel","mountain viewpoint travel","historic city skyline","waterfall travel destination","desert landscape travel","ancient ruins travel"] },
+      queries:["famous landmark","mountain viewpoint","historic city skyline","waterfall","desert landscape","ancient ruins"] },
     { start:17, end:20, key:"food", tag:"Evening · Food & Getaways",
-      queries:["gourmet food table","sunset beach vacation","street food market","tropical resort evening","fine dining plate","seaside sunset"] },
+      queries:["gourmet food","sunset beach","street food market","tropical resort","fine dining","seaside sunset"] },
     { start:20, end:22, key:"news", tag:"Night · World News",
-      queries:["newspaper front page","press conference journalism","world map news","city skyline night lights","television news studio"] }
+      queries:["newspaper","press conference","world map","city skyline night","television news studio"] }
   ];
-  // 22:00–07:00 -> no photo, plain calm background.
 
-  var WEATHER_REFRESH_MS = 30 * 60 * 1000;   // 30 min
-  var DRIFT_INTERVAL_MS = 60 * 1000;         // 60 s burn-in drift
-  var DRIFT_RANGE_PX = 14;
+  var WEATHER_REFRESH_MS = 30 * 60 * 1000;
+  var DRIFT_INTERVAL_MS = 60 * 1000;
+  var DRIFT_RANGE_PX = 10;
 
-  /* ============ helpers ============ */
   function pad(n){ return String(n).padStart(2,"0"); }
   function pick(arr, seed){ return arr[seed % arr.length]; }
 
@@ -326,10 +349,9 @@
       var c = CATEGORIES[i];
       if (hour >= c.start && hour < c.end) return c;
     }
-    return null; // night window
+    return null;
   }
 
-  /* ============ clock ============ */
   var elMain = document.getElementById("timeMain");
   var elSec  = document.getElementById("timeSeconds");
   var elDate = document.getElementById("dateRow");
@@ -348,7 +370,6 @@
   tick();
   setInterval(tick, 1000);
 
-  /* ============ wallpaper engine ============ */
   var bgA = document.getElementById("bgA");
   var bgB = document.getElementById("bgB");
   var nightBg = document.getElementById("nightBg");
@@ -401,19 +422,30 @@
     activeLayer = incoming;
   }
 
+  // Wikimedia Commons image search — free, keyless, explicitly supports
+  // cross-origin calls from a browser (origin=* below), which is what
+  // made the previous source (Openverse) unreliable: it now returns
+  // 403 on plain anonymous requests.
   function fetchWallpaper(cat, hour){
-    var q = pick(cat.queries, hour);
-    var url = "https://api.openverse.org/v1/images/?q=" + encodeURIComponent(q) +
-              "&category=photograph&size=large&page_size=20&mature=false";
+    var q = pick(cat.queries, hour) + " filetype:bitmap";
+    var url = "https://commons.wikimedia.org/w/api.php?action=query&format=json" +
+              "&generator=search&gsrnamespace=6&gsrlimit=25&gsrsearch=" + encodeURIComponent(q) +
+              "&prop=imageinfo&iiprop=url|mime&iiurlwidth=1600&origin=*";
     fetch(url)
       .then(function(r){ if(!r.ok) throw new Error("bad response"); return r.json(); })
       .then(function(data){
-        var results = (data && data.results) || [];
-        if (!results.length) throw new Error("no results");
-        var choice = results[Math.floor(Math.random()*results.length)];
-        var imgUrl = choice.url || choice.thumbnail;
-        if (!imgUrl) throw new Error("no url");
-        swapToImage(imgUrl);
+        var pages = data && data.query && data.query.pages;
+        if (!pages) throw new Error("no pages");
+        var list = [];
+        for (var k in pages){
+          if (!pages.hasOwnProperty(k)) continue;
+          var info = pages[k].imageinfo && pages[k].imageinfo[0];
+          if (info && info.thumburl && /^image\/(jpeg|png|webp)/i.test(info.mime || "")){
+            list.push(info.thumburl);
+          }
+        }
+        if (!list.length) throw new Error("no usable images");
+        swapToImage(list[Math.floor(Math.random() * list.length)]);
       })
       .catch(function(){ fallbackGradientFor(cat.key); });
   }
@@ -439,7 +471,6 @@
   refreshWallpaperIfNeeded();
   setInterval(refreshWallpaperIfNeeded, 60 * 1000);
 
-  /* ============ weather ============ */
   var WMO_ICONS = {
     clear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4.6"/><path d="M12 2.5v2.4M12 19.1v2.4M4.6 4.6l1.7 1.7M17.7 17.7l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.6 19.4l1.7-1.7M17.7 6.3l1.7-1.7" stroke-linecap="round"/></svg>',
     cloud: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6.5 18a4 4 0 0 1-.4-7.98A5.5 5.5 0 0 1 16.6 8.3 4.5 4.5 0 0 1 16 18H6.5Z" stroke-linejoin="round"/></svg>',
@@ -474,9 +505,11 @@
       var card = document.createElement("div");
       card.className = "fc-card";
       card.innerHTML =
-        '<span class="fc-day">' + FC_DAY_NAMES[d.getDay()] + '</span>' +
         iconForCode(daily.weather_code[i], true) +
-        '<span class="fc-temps"><span class="fc-hi">' + Math.round(daily.temperature_2m_max[i]) + '°</span> <span class="fc-lo">' + Math.round(daily.temperature_2m_min[i]) + '°</span></span>';
+        '<span class="fc-info">' +
+          '<span class="fc-day">' + FC_DAY_NAMES[d.getDay()] + '</span>' +
+          '<span class="fc-temps"><span class="fc-hi">' + Math.round(daily.temperature_2m_max[i]) + '°</span> <span class="fc-lo">' + Math.round(daily.temperature_2m_min[i]) + '°</span></span>' +
+        '</span>';
       elForecast.appendChild(card);
     }
   }
@@ -515,7 +548,6 @@
     }catch(e){ /* keep default */ }
   }
 
-  /* ============ OLED / AMOLED burn-in protection ============ */
   var stage = document.getElementById("stage");
   function driftContent(){
     var x = (Math.random() * DRIFT_RANGE_PX * 2 - DRIFT_RANGE_PX).toFixed(1);
@@ -535,7 +567,7 @@
     });
   }
 
-  /* ============ fullscreen on touch (Chrome/Android has no browser UI to hide otherwise) ============ */
+  /* ============ tap anywhere to toggle full screen ============ */
   var fsHint = document.getElementById("fsHint");
   var docEl = document.documentElement;
 
@@ -545,14 +577,20 @@
 
   function enterFullscreen(){
     var req = docEl.requestFullscreen || docEl.webkitRequestFullscreen;
-    if (req){
-      req.call(docEl).catch(function(){ /* some browsers reject silently */ });
-    }
-    // Landscape lock is optional and only works once fullscreen is active;
-    // fails silently on phones/browsers that don't support it.
+    if (req) req.call(docEl).catch(function(){});
     if (screen.orientation && screen.orientation.lock){
       screen.orientation.lock("any").catch(function(){});
     }
+  }
+
+  function exitFullscreen(){
+    var ex = document.exitFullscreen || document.webkitExitFullscreen;
+    if (ex) ex.call(document).catch(function(){});
+  }
+
+  function toggleFullscreen(){
+    if (isFullscreen()) exitFullscreen();
+    else enterFullscreen();
   }
 
   function updateHint(){
@@ -560,12 +598,11 @@
     else fsHint.classList.remove("hidden");
   }
 
-  document.addEventListener("click", function(){
-    if (!isFullscreen()) enterFullscreen();
-  });
-  document.addEventListener("touchend", function(){
-    if (!isFullscreen()) enterFullscreen();
-  });
+  // A single "click" is enough — Chrome fires it for both touch and
+  // mouse taps (the viewport meta already disables the old 300ms
+  // touch delay), so listening to touchend as well would double-fire
+  // the toggle on a real touchscreen tap.
+  document.addEventListener("click", toggleFullscreen);
   document.addEventListener("fullscreenchange", updateHint);
   document.addEventListener("webkitfullscreenchange", updateHint);
   updateHint();
