@@ -146,6 +146,7 @@
     justify-content:center;
     line-height:1;
     width:100%;
+    gap:6px;
   }
   .time-main{
     font-family:'JetBrains Mono',monospace;
@@ -155,6 +156,13 @@
     font-variant-numeric:tabular-nums;
     text-shadow:0 4px 30px rgba(0,0,0,.45);
     white-space:nowrap;
+  }
+  .time-ampm{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:600;
+    font-size:clamp(16px, 6vw, 30px);
+    color:var(--text-dim);
+    letter-spacing:.04em;
   }
   .time-seconds{
     display:block;
@@ -264,7 +272,9 @@
     .weather-temp{font-size:33px;}
     .weather-place{font-size:14px;}
     .clock-wrap{gap:10px;}
+    .time-row{gap:12px;}
     .time-main{font-size:clamp(96px, 27vw, 220px);}
+    .time-ampm{font-size:clamp(22px, 5vw, 46px);}
     .time-seconds{font-size:clamp(26px, 6vw, 52px);}
     .date-row{font-size:clamp(16px, 3vw, 20px);}
     .period-note{font-size:12px;}
@@ -280,9 +290,6 @@
 </head>
 <body>
 
-
-
-
 <div class="frame" id="frame">
   <div class="bg-layer" id="bgA"></div>
   <div class="bg-layer" id="bgB"></div>
@@ -296,7 +303,8 @@
 
     <div class="clock-wrap">
       <div class="time-row">
-        <span class="time-main" id="timeMain">00:00</span>
+        <span class="time-main" id="timeMain">12:00</span>
+        <span class="time-ampm" id="timeAmpm">AM</span>
       </div>
       <span class="time-seconds" id="timeSeconds">00</span>
       <div class="date-row" id="dateRow">--</div>
@@ -348,7 +356,7 @@
 
   var WEATHER_REFRESH_MS = 30 * 60 * 1000;
   var DRIFT_INTERVAL_MS = 60 * 1000;
-  var DRIFT_RANGE_PX = 10;
+  var DRIFT_RANGE_PX = 14;
 
   function pad(n){ return String(n).padStart(2,"0"); }
   function pick(arr, seed){ return arr[seed % arr.length]; }
@@ -362,6 +370,7 @@
   }
 
   var elMain = document.getElementById("timeMain");
+  var elAmpm = document.getElementById("timeAmpm");
   var elSec  = document.getElementById("timeSeconds");
   var elDate = document.getElementById("dateRow");
   var elTag  = document.getElementById("periodTag");
@@ -372,7 +381,11 @@
 
   function tick(){
     var now = new Date();
-    elMain.textContent = pad(now.getHours()) + ":" + pad(now.getMinutes());
+    var h24 = now.getHours();
+    var h12 = h24 % 12;
+    if (h12 === 0) h12 = 12;
+    elMain.textContent = h12 + ":" + pad(now.getMinutes());
+    elAmpm.textContent = h24 >= 12 ? "PM" : "AM";
     elSec.textContent = pad(now.getSeconds());
     elDate.textContent = DAY_NAMES[now.getDay()] + ", " + now.getDate() + " " + MONTH_NAMES[now.getMonth()];
   }
@@ -660,6 +673,8 @@
   }, CHECK_INTERVAL_MS);
 })();
 </script>
+</body>
+</html>
 </body>
 </html>
 </body>
