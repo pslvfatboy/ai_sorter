@@ -572,5 +572,56 @@
 
 })();
 </script>
+
+<script>
+/* ============ auto-reload when the hosted copy changes ============ */
+/* Checks this same URL every 5 minutes for changes (e.g. pushed to
+   GitHub Pages) and reloads only when the content actually differs.
+   If the network or the host is unreachable, it does nothing and tries
+   again next cycle — the clock, date and last-known weather stay on
+   screen and keep working entirely offline in the meantime. */
+(function () {
+  "use strict";
+  if (!/^https?:$/.test(location.protocol)) return; // skip for a local file:// copy
+
+  var CHECK_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+  var FETCH_TIMEOUT_MS = 10 * 1000;
+  var baselineText = null;
+
+  function fetchSelf(){
+    var controller = ("AbortController" in window) ? new AbortController() : null;
+    var timer = controller ? setTimeout(function(){ controller.abort(); }, FETCH_TIMEOUT_MS) : null;
+    return fetch(location.href, {
+      cache: "no-store",
+      signal: controller ? controller.signal : undefined
+    }).then(function(r){
+      if (timer) clearTimeout(timer);
+      if (!r.ok) throw new Error("bad status");
+      return r.text();
+    }).catch(function(err){
+      if (timer) clearTimeout(timer);
+      throw err;
+    });
+  }
+
+  // Establish a baseline shortly after load, from the server's copy
+  // rather than the live (browser-normalized) DOM.
+  setTimeout(function(){
+    fetchSelf().then(function(text){ baselineText = text; }).catch(function(){
+      // No network at startup — fine, we'll pick up a baseline later.
+    });
+  }, 3000);
+
+  setInterval(function(){
+    fetchSelf().then(function(text){
+      if (baselineText === null){ baselineText = text; return; }
+      if (text !== baselineText) location.reload();
+    }).catch(function(){
+      // Offline or the host is unreachable: change nothing, just retry
+      // on the next interval. The clock keeps running locally either way.
+    });
+  }, CHECK_INTERVAL_MS);
+})();
+</script>
 </body>
 </html>
