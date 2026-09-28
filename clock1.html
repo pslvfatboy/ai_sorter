@@ -290,6 +290,47 @@
   @media (prefers-reduced-motion:reduce){
     .bg-layer, .stage{transition:none;}
   }
+
+  /* ================= adaptive sizing =================
+     JS (fitLayout) measures the viewport and sets:
+       --u        general scale (1 = 360px on the short side)
+       --time-px  time font size, fitted to width AND height
+       --ampm-px  AM/PM size
+       --date-px  date size
+     Everything below is derived from those, so the layout
+     scales to any phone, tablet or orientation. */
+  :root{ --u:1; --time-px:88px; --ampm-px:24px; --date-px:15px; }
+
+  .stage{
+    padding-top:calc(var(--u) * 26px + env(safe-area-inset-top,0px));
+    padding-right:calc(var(--u) * 16px + env(safe-area-inset-right,0px));
+    padding-bottom:calc(var(--u) * 16px + env(safe-area-inset-bottom,0px));
+    padding-left:calc(var(--u) * 16px + env(safe-area-inset-left,0px));
+    gap:calc(var(--u) * 14px);
+  }
+  .tag{font-size:calc(var(--u) * 10.5px); padding:calc(var(--u) * 6px) calc(var(--u) * 11px); gap:calc(var(--u) * 6px);}
+  .tag .dot{width:calc(var(--u) * 6px); height:calc(var(--u) * 6px);}
+
+  .weather-pill,.fc-card{
+    gap:calc(var(--u) * 9px);
+    padding:calc(var(--u) * 8px) calc(var(--u) * 14px) calc(var(--u) * 8px) calc(var(--u) * 10px);
+  }
+  .weather-pill svg,.fc-card svg{width:calc(var(--u) * 30px); height:calc(var(--u) * 30px);}
+  .weather-temp{font-size:calc(var(--u) * 20px);}
+  .weather-place{font-size:calc(var(--u) * 11px);}
+  .fc-day{font-size:calc(var(--u) * 11px);}
+  .fc-temps{font-size:calc(var(--u) * 20px);}
+
+  .clock-wrap{gap:calc(var(--u) * 10px);}
+  .time-row{gap:calc(var(--u) * 6px);}
+  .time-main{font-size:var(--time-px);}
+  .time-ampm{font-size:var(--ampm-px);}
+  .sec-bar{height:max(2px, calc(var(--u) * 2px)); margin-top:calc(var(--u) * 2px);}
+  .date-row{font-size:var(--date-px);}
+  .period-note{font-size:calc(var(--u) * 10.5px);}
+
+  .fs-hint-card{font-size:calc(var(--u) * 13px); padding:calc(var(--u) * 20px) calc(var(--u) * 26px); gap:calc(var(--u) * 10px);}
+  .fs-hint-card svg{width:calc(var(--u) * 28px); height:calc(var(--u) * 28px);}
 </style>
 </head>
 <body>
@@ -589,10 +630,43 @@
     }catch(e){ /* keep default */ }
   }
 
+  /* ============ adapt layout to the screen ============ */
+  var layoutScale = 1;
+  function fitLayout(){
+    var de = document.documentElement;
+    var w = window.innerWidth  || de.clientWidth;
+    var h = window.innerHeight || de.clientHeight;
+    var landscape = w > h;
+
+    // General scale: 1.0 at 360px on the short side, clamped to sane bounds.
+    var u = Math.max(0.8, Math.min(3.5, Math.min(w, h) / 360));
+    layoutScale = u;
+
+    // Time: "12:00" + AM/PM needs ~3.4em of width; keep it within ~82% of
+    // the width, and within a share of the height (less in landscape).
+    var timePx = Math.min(w * 0.245, h * (landscape ? 0.36 : 0.30), 340);
+    var ampmPx = timePx * 0.28;
+
+    // Date: scale with u but never wider than the screen.
+    var datePx = Math.min(15 * u, w * 0.06);
+
+    var s = de.style;
+    s.setProperty("--u", u.toFixed(3));
+    s.setProperty("--time-px", timePx.toFixed(1) + "px");
+    s.setProperty("--ampm-px", ampmPx.toFixed(1) + "px");
+    s.setProperty("--date-px", datePx.toFixed(1) + "px");
+  }
+  fitLayout();
+  window.addEventListener("resize", fitLayout);
+  window.addEventListener("orientationchange", function(){ setTimeout(fitLayout, 250); });
+  document.addEventListener("fullscreenchange", function(){ setTimeout(fitLayout, 150); });
+  document.addEventListener("webkitfullscreenchange", function(){ setTimeout(fitLayout, 150); });
+
   var stage = document.getElementById("stage");
   function driftContent(){
-    var x = (Math.random() * DRIFT_RANGE_PX * 2 - DRIFT_RANGE_PX).toFixed(1);
-    var y = (Math.random() * DRIFT_RANGE_PX * 2 - DRIFT_RANGE_PX).toFixed(1);
+    var range = DRIFT_RANGE_PX * layoutScale;
+    var x = (Math.random() * range * 2 - range).toFixed(1);
+    var y = (Math.random() * range * 2 - range).toFixed(1);
     stage.style.transform = "translate(" + x + "px," + y + "px)";
   }
   driftContent();
