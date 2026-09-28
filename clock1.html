@@ -170,17 +170,19 @@
     letter-spacing:.04em;
   }
   .sec-bar{
+    --sec-color:#4ade80;
     display:flex;
     gap:1px;
     width:100%;
-    height:2px;
+    height:6px;
     margin-top:2px;
   }
   .sec-bar i{
     flex:1 1 0;
-    background:var(--accent);
-    border-radius:1px;
-    opacity:.9;
+    background:var(--sec-color);
+    border-radius:1.5px;
+    opacity:.92;
+    transition:background-color .6s ease;
   }
   .sec-bar i.off{visibility:hidden;}
   .date-row{
@@ -237,35 +239,6 @@
   }
   .fc-hi{color:var(--text); font-weight:600;}
   .fc-lo{color:var(--text-faint);}
-
-  .fs-hint{
-    position:absolute;
-    inset:0;
-    z-index:20;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    background:rgba(4,5,7,.55);
-    backdrop-filter:blur(2px);
-    transition:opacity .5s ease;
-  }
-  .fs-hint.hidden{opacity:0; pointer-events:none;}
-  .fs-hint-card{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:10px;
-    padding:20px 26px;
-    border-radius:18px;
-    background:var(--card);
-    border:1px solid var(--card-border);
-    color:var(--text);
-    font-size:13px;
-    letter-spacing:.03em;
-    text-align:center;
-    max-width:80vw;
-  }
-  .fs-hint-card svg{width:28px;height:28px;color:var(--accent);}
 
   /* ---- enhance for tablets / laptops previewing the page ---- */
   @media (min-width:480px){
@@ -339,21 +312,9 @@
   }
   .time-ampm.day{background:#ff3b3b; box-shadow:0 0 calc(var(--ampm-px) * 0.6) rgba(255,59,59,.65);}
   .time-ampm.night{background:#3d9bff; box-shadow:0 0 calc(var(--ampm-px) * 0.6) rgba(61,155,255,.65);}
-  .sec-bar{height:max(4px, calc(var(--u) * 4px)); margin-top:calc(var(--u) * 4px);}
+  .sec-bar{height:max(6px, calc(var(--u) * 6px)); margin-top:calc(var(--u) * 4px);}
   .date-row{font-size:var(--date-px);}
   .period-note{font-size:calc(var(--u) * 10.5px);}
-
-  .fs-hint{
-    inset:auto 0 auto 0;
-    top:calc(var(--u) * 72px + env(safe-area-inset-top,0px));
-    background:none;
-    backdrop-filter:none;
-    -webkit-backdrop-filter:none;
-    pointer-events:none;
-    z-index:20;
-  }
-  .fs-hint-card{font-size:calc(var(--u) * 13px); padding:calc(var(--u) * 20px) calc(var(--u) * 26px); gap:calc(var(--u) * 10px);}
-  .fs-hint-card svg{width:calc(var(--u) * 28px); height:calc(var(--u) * 28px);}
 </style>
 </head>
 <body>
@@ -394,13 +355,6 @@
           <span class="weather-place" id="weatherPlace">--</span>
         </div>
       </div>
-    </div>
-  </div>
-
-  <div class="fs-hint" id="fsHint">
-    <div class="fs-hint-card">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H5a1 1 0 0 0-1 1v4M15 4h4a1 1 0 0 1 1 1v4M9 20H5a1 1 0 0 1-1-1v-4M15 20h4a1 1 0 0 0 1-1v-4"/></svg>
-      <span>Tap anywhere to go full screen<br>(tap again to exit)</span>
     </div>
   </div>
 </div>
@@ -473,12 +427,23 @@
     secBar.appendChild(seg);
     secSegs.push(seg);
   }
+  // Colors step down every 15s of the minute, then reset to green at :00 —
+  // a calm-to-urgent cue that's easy to read at a glance from across a room.
+  var SEC_BAND_COLORS = ["#4ade80", "#fbbf24", "#fb923c", "#f87171"]; // green, amber, orange, red
+  function secBandColor(remaining){
+    if (remaining > 45) return SEC_BAND_COLORS[0];
+    if (remaining > 30) return SEC_BAND_COLORS[1];
+    if (remaining > 15) return SEC_BAND_COLORS[2];
+    return SEC_BAND_COLORS[3];
+  }
   function updateSecBar(){
     var sec = new Date().getSeconds();
+    var remaining = 60 - sec; // 60 at :00 down to 1 at :59
     // sec 0 -> all 60 visible; sec 59 -> 1 visible
     for (var i=0; i<60; i++){
-      secSegs[i].className = (i >= 60 - sec) ? "off" : "";
+      secSegs[i].className = (i >= remaining) ? "off" : "";
     }
+    secBar.style.setProperty("--sec-color", secBandColor(remaining));
   }
   function secLoop(){
     updateSecBar();
@@ -712,7 +677,6 @@
   }
 
   /* ============ tap anywhere to toggle full screen ============ */
-  var fsHint = document.getElementById("fsHint");
   var docEl = document.documentElement;
 
   function isFullscreen(){
@@ -747,35 +711,22 @@
     }
   }
 
-  // Non-blocking hint: shown briefly when not full screen, then fades away.
-  var hintTimer = null;
-  function updateHint(){
-    clearTimeout(hintTimer);
-    if (isFullscreen()){
-      fsHint.classList.add("hidden");
-    } else {
-      fsHint.classList.remove("hidden");
-      hintTimer = setTimeout(function(){ fsHint.classList.add("hidden"); }, 6000);
-    }
-  }
-
   // A single "click" is enough — Chrome fires it for both touch and
   // mouse taps (the viewport meta already disables the old 300ms
   // touch delay), so listening to touchend as well would double-fire
-  // the toggle on a real touchscreen tap.
+  // the toggle on a real touchscreen tap. Tap anywhere to drop to
+  // windowed mode; tap again to return to full screen.
   document.addEventListener("click", toggleFullscreen);
-  document.addEventListener("fullscreenchange", updateHint);
-  document.addEventListener("webkitfullscreenchange", updateHint);
-  updateHint();
 
-  // After a reload the browser drops full screen and only allows re-entering
-  // it from a tap. Try anyway (works in some browsers/kiosk apps); if it is
-  // refused, the very next tap anywhere restores full screen.
-  var wantFS = false;
-  try{ wantFS = localStorage.getItem("clockWantFS") === "1"; }catch(e){}
+  // Full screen is the default. It only turns off if you've explicitly
+  // tapped out of it (stored below), so a reload or the 5-minute
+  // auto-refresh comes back full screen rather than windowed.
+  var wantFS = true;
+  try{ if (localStorage.getItem("clockWantFS") === "0") wantFS = false; }catch(e){}
   if (wantFS && !isFullscreen()){
     enterFullscreen();
-  }})();
+  }
+  })();
 </script>
 
 <script>
