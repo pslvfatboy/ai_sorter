@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Daybreak Clock</title>
 <meta name="theme-color" content="#07080a">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -143,12 +146,12 @@
     max-width:92vw;
   }
   .time-row{
+    position:relative;
     display:flex;
     align-items:baseline;
     justify-content:center;
     line-height:1;
     width:100%;
-    gap:6px;
   }
   .time-main{
     font-family:'JetBrains Mono',monospace;
@@ -324,11 +327,31 @@
   .clock-wrap{gap:calc(var(--u) * 10px);}
   .time-row{gap:calc(var(--u) * 6px);}
   .time-main{font-size:var(--time-px);}
-  .time-ampm{font-size:var(--ampm-px);}
-  .sec-bar{height:max(2px, calc(var(--u) * 2px)); margin-top:calc(var(--u) * 2px);}
+  .time-ampm{
+    position:absolute;
+    top:calc(var(--ampm-px) * -0.05);
+    right:calc(var(--ampm-px) * -0.45);
+    width:calc(var(--ampm-px) * 0.62);
+    height:calc(var(--ampm-px) * 0.62);
+    border-radius:50%;
+    font-size:0;
+    transition:background-color 1.2s ease, box-shadow 1.2s ease;
+  }
+  .time-ampm.day{background:#ff3b3b; box-shadow:0 0 calc(var(--ampm-px) * 0.6) rgba(255,59,59,.65);}
+  .time-ampm.night{background:#3d9bff; box-shadow:0 0 calc(var(--ampm-px) * 0.6) rgba(61,155,255,.65);}
+  .sec-bar{height:max(4px, calc(var(--u) * 4px)); margin-top:calc(var(--u) * 4px);}
   .date-row{font-size:var(--date-px);}
   .period-note{font-size:calc(var(--u) * 10.5px);}
 
+  .fs-hint{
+    inset:auto 0 auto 0;
+    top:calc(var(--u) * 72px + env(safe-area-inset-top,0px));
+    background:none;
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+    pointer-events:none;
+    z-index:20;
+  }
   .fs-hint-card{font-size:calc(var(--u) * 13px); padding:calc(var(--u) * 20px) calc(var(--u) * 26px); gap:calc(var(--u) * 10px);}
   .fs-hint-card svg{width:calc(var(--u) * 28px); height:calc(var(--u) * 28px);}
 </style>
@@ -349,7 +372,7 @@
     <div class="clock-wrap">
       <div class="time-row">
         <span class="time-main" id="timeMain">12:00</span>
-        <span class="time-ampm" id="timeAmpm">AM</span>
+        <span class="time-ampm" id="timeAmpm" role="img" aria-label="Daytime"></span>
       </div>
       <div class="sec-bar" id="secBar" aria-hidden="true"></div>
       <div class="date-row" id="dateRow">--</div>
@@ -429,7 +452,10 @@
     var h12 = h24 % 12;
     if (h12 === 0) h12 = 12;
     elMain.textContent = h12 + ":" + pad(now.getMinutes());
-    elAmpm.textContent = h24 >= 12 ? "PM" : "AM";
+    // Day/night dot: red = daytime (6:00–17:59), blue = night.
+    var isDayHour = h24 >= 6 && h24 < 18;
+    elAmpm.className = "time-ampm " + (isDayHour ? "day" : "night");
+    elAmpm.setAttribute("aria-label", isDayHour ? "Daytime" : "Night time");
     elDate.textContent = DAY_NAMES[now.getDay()] + ", " + now.getDate() + " " + MONTH_NAMES[now.getMonth()];
   }
   tick();
@@ -642,9 +668,12 @@
     var u = Math.max(0.8, Math.min(3.5, Math.min(w, h) / 360));
     layoutScale = u;
 
-    // Time: "12:00" + AM/PM needs ~3.4em of width; keep it within ~82% of
-    // the width, and within a share of the height (less in landscape).
-    var timePx = Math.min(w * 0.2695, h * (landscape ? 0.396 : 0.33), 374);
+    // Time: "12:00" needs ~3.1em of width now that the day/night dot sits
+    // above it instead of taking up row width; keep it within the
+    // available width, and within a share of the height (more headroom
+    // in landscape, where height is no longer the tight constraint).
+    var availW = w - 32 * u;   // width left inside the stage padding
+    var timePx = Math.min(w * 0.37, availW / 2.85, h * (landscape ? 0.62 : 0.42), 520);
     var ampmPx = timePx * 0.28;
 
     // Date: scale with u but never wider than the screen.
@@ -692,7 +721,12 @@
 
   function enterFullscreen(){
     var req = docEl.requestFullscreen || docEl.webkitRequestFullscreen;
-    if (req) req.call(docEl).catch(function(){});
+    if (req){
+      try{
+        var p = req.call(docEl);
+        if (p && p.catch) p.catch(function(){});
+      }catch(e){}
+    }
     if (screen.orientation && screen.orientation.lock){
       screen.orientation.lock("any").catch(function(){});
     }
@@ -704,13 +738,25 @@
   }
 
   function toggleFullscreen(){
-    if (isFullscreen()) exitFullscreen();
-    else enterFullscreen();
+    if (isFullscreen()){
+      try{ localStorage.setItem("clockWantFS","0"); }catch(e){}
+      exitFullscreen();
+    } else {
+      try{ localStorage.setItem("clockWantFS","1"); }catch(e){}
+      enterFullscreen();
+    }
   }
 
+  // Non-blocking hint: shown briefly when not full screen, then fades away.
+  var hintTimer = null;
   function updateHint(){
-    if (isFullscreen()) fsHint.classList.add("hidden");
-    else fsHint.classList.remove("hidden");
+    clearTimeout(hintTimer);
+    if (isFullscreen()){
+      fsHint.classList.add("hidden");
+    } else {
+      fsHint.classList.remove("hidden");
+      hintTimer = setTimeout(function(){ fsHint.classList.add("hidden"); }, 6000);
+    }
   }
 
   // A single "click" is enough — Chrome fires it for both touch and
@@ -722,7 +768,14 @@
   document.addEventListener("webkitfullscreenchange", updateHint);
   updateHint();
 
-})();
+  // After a reload the browser drops full screen and only allows re-entering
+  // it from a tap. Try anyway (works in some browsers/kiosk apps); if it is
+  // refused, the very next tap anywhere restores full screen.
+  var wantFS = false;
+  try{ wantFS = localStorage.getItem("clockWantFS") === "1"; }catch(e){}
+  if (wantFS && !isFullscreen()){
+    enterFullscreen();
+  }})();
 </script>
 
 <script>
@@ -749,7 +802,10 @@
     }).then(function(r){
       if (timer) clearTimeout(timer);
       if (!r.ok) throw new Error("bad status");
-      return r.text();
+      // Prefer the server's ETag / Last-Modified as the "version"; fall back
+      // to the page text. Avoids false-positive reloads (which drop full screen).
+      var tag = r.headers.get("etag") || r.headers.get("last-modified");
+      return tag ? Promise.resolve("v:" + tag) : r.text();
     }).catch(function(err){
       if (timer) clearTimeout(timer);
       throw err;
@@ -775,11 +831,5 @@
   }, CHECK_INTERVAL_MS);
 })();
 </script>
-</body>
-</html>
-</body>
-</html>
-</body>
-</html>
 </body>
 </html>
