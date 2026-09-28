@@ -316,7 +316,7 @@
     padding:calc(var(--u) * 8px) calc(var(--u) * 14px) calc(var(--u) * 8px) calc(var(--u) * 10px);
   }
   .weather-pill svg,.fc-card svg{width:calc(var(--u) * 30px); height:calc(var(--u) * 30px);}
-  .weather-temp{font-size:calc(var(--u) * 20px);}
+  .weather-temp{font-size:calc(var(--u) * 24px);}
   .weather-place{font-size:calc(var(--u) * 11px);}
   .fc-day{font-size:calc(var(--u) * 11px);}
   .fc-temps{font-size:calc(var(--u) * 20px);}
@@ -644,7 +644,7 @@
 
     // Time: "12:00" + AM/PM needs ~3.4em of width; keep it within ~82% of
     // the width, and within a share of the height (less in landscape).
-    var timePx = Math.min(w * 0.245, h * (landscape ? 0.36 : 0.30), 340);
+    var timePx = Math.min(w * 0.2695, h * (landscape ? 0.396 : 0.33), 374);
     var ampmPx = timePx * 0.28;
 
     // Date: scale with u but never wider than the screen.
