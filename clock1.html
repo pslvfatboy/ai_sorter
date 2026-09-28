@@ -163,11 +163,7 @@
     white-space:nowrap;
   }
   .time-ampm{
-    font-family:'JetBrains Mono',monospace;
-    font-weight:600;
-    font-size:clamp(16px, 6vw, 30px);
     color:var(--text-dim);
-    letter-spacing:.04em;
   }
   .sec-bar{
     --sec-color:#4ade80;
@@ -302,16 +298,15 @@
   .time-main{font-size:var(--time-px);}
   .time-ampm{
     position:absolute;
-    top:calc(var(--ampm-px) * -0.05);
-    right:calc(var(--ampm-px) * -0.45);
-    width:calc(var(--ampm-px) * 0.62);
-    height:calc(var(--ampm-px) * 0.62);
-    border-radius:50%;
+    top:calc(var(--ampm-px) * -0.1);
+    right:calc(var(--ampm-px) * -0.5);
+    width:calc(var(--ampm-px) * 1.05);
+    height:calc(var(--ampm-px) * 1.05);
     font-size:0;
-    transition:background-color 1.2s ease, box-shadow 1.2s ease;
+    filter:drop-shadow(0 2px 10px rgba(0,0,0,.5));
+    transition:color 1.2s ease;
   }
-  .time-ampm.day{background:#ff3b3b; box-shadow:0 0 calc(var(--ampm-px) * 0.6) rgba(255,59,59,.65);}
-  .time-ampm.night{background:#3d9bff; box-shadow:0 0 calc(var(--ampm-px) * 0.6) rgba(61,155,255,.65);}
+  .time-ampm svg{width:100%; height:100%; display:block;}
   .sec-bar{height:max(6px, calc(var(--u) * 6px)); margin-top:calc(var(--u) * 4px);}
   .date-row{font-size:var(--date-px);}
   .period-note{font-size:calc(var(--u) * 10.5px);}
@@ -333,7 +328,7 @@
     <div class="clock-wrap">
       <div class="time-row">
         <span class="time-main" id="timeMain">12:00</span>
-        <span class="time-ampm" id="timeAmpm" role="img" aria-label="Daytime"></span>
+        <span class="time-ampm" id="timeAmpm" role="img" aria-label="Weather"></span>
       </div>
       <div class="sec-bar" id="secBar" aria-hidden="true"></div>
       <div class="date-row" id="dateRow">--</div>
@@ -406,10 +401,6 @@
     var h12 = h24 % 12;
     if (h12 === 0) h12 = 12;
     elMain.textContent = h12 + ":" + pad(now.getMinutes());
-    // Day/night dot: red = daytime (6:00–17:59), blue = night.
-    var isDayHour = h24 >= 6 && h24 < 18;
-    elAmpm.className = "time-ampm " + (isDayHour ? "day" : "night");
-    elAmpm.setAttribute("aria-label", isDayHour ? "Daytime" : "Night time");
     elDate.textContent = DAY_NAMES[now.getDay()] + ", " + now.getDate() + " " + MONTH_NAMES[now.getMonth()];
   }
   tick();
@@ -560,7 +551,9 @@
     snow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6.5 13.5a4 4 0 0 1-.4-7.97A5.5 5.5 0 0 1 16.6 3.8 4.5 4.5 0 0 1 16 13.5H6.5Z" stroke-linejoin="round"/><path d="M9 17v4M7 18.5l4 1M11 18.5l-4 1M15 17v4M13 18.5l4 1M17 18.5l-4 1" stroke-linecap="round"/></svg>',
     storm: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6.5 13a4 4 0 0 1-.4-7.97A5.5 5.5 0 0 1 16.6 3.3 4.5 4.5 0 0 1 16 13H6.5Z" stroke-linejoin="round"/><path d="M13 13.5 10 18h3l-2 4" stroke-linejoin="round" stroke-linecap="round"/></svg>',
     fog: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 9h9M3 12.5h14M6 16h11" stroke-linecap="round"/></svg>',
-    night: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 14.2A8 8 0 1 1 9.8 4a6.4 6.4 0 0 0 10.2 10.2Z" stroke-linejoin="round"/></svg>'
+    night: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 14.2A8 8 0 1 1 9.8 4a6.4 6.4 0 0 0 10.2 10.2Z" stroke-linejoin="round"/></svg>',
+    cloudySun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="7.5" r="3"/><path d="M8 2.3v1.5M8 11.7v1M3.3 7.5h1.3M11.7 7.5h1M4.7 4.2l.9.9M10.4 10l.9.9M11.3 4.2l-.9.9"/><path d="M9.3 19.3a4.3 4.3 0 0 1-.4-8.55 5.9 5.9 0 0 1 10.9 2.25 4.8 4.8 0 0 1-.5 6.3H9.3Z"/></svg>',
+    cloudyMoon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.7 3.1a4.6 4.6 0 1 0 3 5.4 3.7 3.7 0 0 1-3-5.4Z"/><path d="M8.8 19.3a4.3 4.3 0 0 1-.4-8.55A5.9 5.9 0 0 1 19 12.7a4.8 4.8 0 0 1-.5 6.6H8.8Z"/></svg>'
   };
 
   function iconForCode(code, isDay){
@@ -572,6 +565,36 @@
     if ([95,96,99].indexOf(code) > -1) return WMO_ICONS.storm;
     return WMO_ICONS.cloud;
   }
+
+  /* ---- weather icon shown above the time, colored by temperature ----
+     0–15°: white/cream · 15–25°: blue · 25–30°: orange · 30°+: red */
+  function tempColor(t){
+    if (t === null || t === undefined || isNaN(t)) return "#f2efe9";
+    if (t < 15) return "#f2efe9";
+    if (t < 25) return "#6fb7ff";
+    if (t < 30) return "#fb923c";
+    return "#ef4444";
+  }
+  function weatherIconKind(code, isDay){
+    if (code === 0) return isDay ? "clear" : "night";
+    if ([1,2,3].indexOf(code) > -1) return isDay ? "cloudySun" : "cloudyMoon";
+    if ([45,48].indexOf(code) > -1) return isDay ? "cloudySun" : "cloudyMoon";
+    if ([51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,99].indexOf(code) > -1) return "rain";
+    if ([71,73,75,77,85,86].indexOf(code) > -1) return "snow";
+    return isDay ? "cloudySun" : "cloudyMoon";
+  }
+  var timeIconState = { code: null, isDay: null, temp: null };
+  function updateTimeIcon(){
+    var isDay = (timeIconState.isDay !== null) ? timeIconState.isDay :
+      (new Date().getHours() >= 6 && new Date().getHours() < 18);
+    var code = (timeIconState.code !== null) ? timeIconState.code : 0;
+    var kind = weatherIconKind(code, isDay);
+    elAmpm.innerHTML = WMO_ICONS[kind];
+    elAmpm.style.color = tempColor(timeIconState.temp);
+    elAmpm.setAttribute("aria-label", kind + (timeIconState.temp !== null ? ", " + Math.round(timeIconState.temp) + " degrees" : ""));
+  }
+  updateTimeIcon();
+  setInterval(updateTimeIcon, 60 * 1000);
 
   var elWIcon = document.getElementById("weatherIcon");
   var elWTemp = document.getElementById("weatherTemp");
@@ -599,6 +622,10 @@
         if (data.current){
           elWIcon.innerHTML = iconForCode(data.current.weather_code, data.current.is_day === 1);
           elWTemp.textContent = Math.round(data.current.temperature_2m) + "°C";
+          timeIconState.code = data.current.weather_code;
+          timeIconState.isDay = data.current.is_day === 1;
+          timeIconState.temp = data.current.temperature_2m;
+          updateTimeIcon();
         }
         elWPlace.textContent = LOCATION.name;
         if (data.daily) renderToday(data.daily);
